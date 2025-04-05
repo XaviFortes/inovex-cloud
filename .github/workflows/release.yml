@@ -12,20 +12,19 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v1
         with:
-          node-version: '18'
-          cache: 'npm'
+          bun-version: latest
 
       - name: Install dependencies
-        run: npm ci
+        run: bun install
 
       - name: Generate Prisma client
-        run: npx prisma generate
+        run: bunx prisma generate
 
       - name: Build application
-        run: npm run build
+        run: bun run build
 
       - name: Create .env.example if not exists
         run: |
@@ -53,7 +52,7 @@ jobs:
           cp -r .nuxt release/
           cp -r prisma release/
           cp package.json release/
-          cp package-lock.json release/
+          cp bun.lockb release/  # Use Bun lockfile instead of package-lock.json
           cp .env.example release/
           cp LICENSE release/ || true
           cp README.md release/
@@ -64,11 +63,11 @@ jobs:
           cat > release/deploy.sh << 'EOF'
           #!/bin/bash
           echo "Installing dependencies..."
-          npm ci --production
+          bun install --production
           echo "Running database migrations..."
-          npx prisma migrate deploy
+          bunx prisma migrate deploy
           echo "Starting Kratos Panel..."
-          npm start
+          bun start
           EOF
           
           chmod +x release/deploy.sh
@@ -97,15 +96,15 @@ jobs:
             postgres_data:
           EOF
           
-          # Create Dockerfile
+          # Create Dockerfile with Bun
           cat > release/Dockerfile << 'EOF'
-          FROM node:18-alpine
+          FROM oven/bun:latest
           WORKDIR /app
           COPY . .
-          RUN npm ci --production
-          RUN npx prisma generate
+          RUN bun install --production
+          RUN bunx prisma generate
           EXPOSE 3000
-          CMD ["npm", "start"]
+          CMD ["bun", "start"]
           EOF
           
           # Create installation instructions
@@ -113,12 +112,12 @@ jobs:
           # Kratos Panel Installation Guide
           
           ## Prerequisites
-          - Node.js 18 or higher
+          - Bun runtime or Node.js 18 or higher
           - PostgreSQL database
           - Pterodactyl panel with API access
           - Stripe account (for payments)
           
-          ## Standard Installation
+          ## Standard Installation (with Bun)
           
           1. Extract the release package
           2. Copy `.env.example` to `.env` and fill in your configuration details
@@ -142,15 +141,15 @@ jobs:
           2. Copy `.env.example` to `.env` and fill in your configuration details
           3. Install dependencies:
              ```
-             npm ci --production
+             bun install --production
              ```
           4. Run database migrations:
              ```
-             npx prisma migrate deploy
+             bunx prisma migrate deploy
              ```
           5. Start the application:
              ```
-             npm start
+             bun start
              ```
           
           ## Post-Installation
@@ -190,7 +189,7 @@ jobs:
             
             ## Installation
             
-            ### Option 1: Standard Installation
+            ### Option 1: Standard Installation with Bun
             
             1. Download and extract `kratos-panel-${{ github.ref_name }}.zip`
             2. Configure your `.env` file
